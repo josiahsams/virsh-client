@@ -1,0 +1,42 @@
+<domain type='qemu' id='1'>
+  <name>ub20</name>
+  <memory unit='KiB'>2097152</memory>
+  <vcpu placement='static'>2</vcpu>
+  <os>
+    <type arch='x86_64'>hvm</type>
+    <boot dev='hd'/>
+  </os>
+        <cpu mode='custom' >
+            <model fallback='forbid'>EPYC</model>
+        </cpu>
+  <clock offset='utc'>
+  </clock>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>restart</on_reboot>
+  <on_crash>destroy</on_crash>
+  <devices>
+    <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/tmp/ub18.img'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+    <interface type='network'>
+      <source network='default' bridge='virbr0'/>
+      <target dev='vnet0'/>
+      <model type='virtio'/>
+    </interface>
+    <serial type='pty'>
+      <source path='/dev/pts/1'/>
+      <target type='isa-serial' port='0'>
+        <model name='isa-serial'/>
+      </target>
+      <alias name='serial0'/>
+    </serial>
+    <console type='pty' tty='/dev/pts/1'>
+      <source path='/dev/pts/1'/>
+      <target type='serial' port='0'/>
+      <alias name='serial0'/>
+    </console>
+  </devices>
+</domain>
