@@ -3,12 +3,26 @@ package main
 import (
 	"fmt"
 	"log"
+    "runtime"
 
 	libvirt "github.com/libvirt/libvirt-go"
     libvirtxml "github.com/libvirt/libvirt-go-xml"
 )
 
 func main() {
+    fmt.Println("GOARCH : "+ runtime.GOARCH)
+    var platform string
+    var s390x bool = false
+
+    if runtime.GOARCH == "amd64" {
+        platform = "x86_64"
+    } else if runtime.GOARCH == "s390x" {
+        s390x = true
+        platform = "s390x"
+    } else {
+        log.Fatalf("Unsupported platform")
+    }
+
     conn, err := libvirt.NewConnect("qemu:///system")
     if err != nil {
         log.Fatalf("failed to connect: %v", err)
@@ -18,7 +32,11 @@ func main() {
 
     domcfg := &libvirtxml.Domain{}
 
-    domcfg.Type = "qemu"
+    if s390x {
+        domcfg.Type = "kvm"
+    } else {
+        domcfg.Type = "qemu"
+    }
     domcfg.Name  = "ub18-1"
 
     domcfg.Memory = &libvirtxml.DomainMemory{
@@ -26,15 +44,22 @@ func main() {
           Value: 2097152,
        }
     domcfg.VCPU = &libvirtxml.DomainVCPU{ Value: 2 }
-    domcfg.CPU =   &libvirtxml.DomainCPU{
+
+    if s390x {
+         domcfg.CPU = &libvirtxml.DomainCPU{
+            Mode: "host-passthrough",
+        }
+    } else {
+        domcfg.CPU = &libvirtxml.DomainCPU{
             Mode: "custom",
             Model: &libvirtxml.DomainCPUModel{
                 Fallback: "forbid",
                 Value: "EPYC",
             },
         }
+    }
     domcfg.Devices =  &libvirtxml.DomainDeviceList{
-          Emulator: "/usr/bin/qemu-system-x86_64",
+          Emulator: "/usr/bin/qemu-system-" + platform,
           Disks: []libvirtxml.DomainDisk{
              {
                 Device: "disk",
@@ -49,6 +74,21 @@ func main() {
                 Driver:  &libvirtxml.DomainDiskDriver{
                     Name: "qemu",
                     Type: "qcow2",
+                },
+             },
+             {
+                Device: "cdrom",
+                Source:  &libvirtxml.DomainDiskSource{
+                    File: &libvirtxml.DomainDiskSourceFile{
+                        File: "/tmp/cidata.iso",
+                    }},
+                Target:  &libvirtxml.DomainDiskTarget{
+                    Dev: "sda",
+                    Bus: "scsi",
+                },
+                Driver:  &libvirtxml.DomainDiskDriver{
+                    Name: "qemu",
+                    Type: "raw",
                 },
              },
           },
@@ -77,7 +117,7 @@ func main() {
        }
 
     domcfg.OS = &libvirtxml.DomainOS{
-           Type: &libvirtxml.DomainOSType {Arch: "x86_64", Type: "hvm"},
+           Type: &libvirtxml.DomainOSType {Arch: platform, Type: "hvm"},
           BootDevices: []libvirtxml.DomainBootDevice {
              {
                 Dev: "hd",
