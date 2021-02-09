@@ -42,7 +42,7 @@ func main() {
                     &cli.StringFlag{
                         Name:    "mode",
                         Usage:   "CPU mode",
-                        Aliases: []string{"m"},
+                        Aliases: []string{"mo"},
                         Value: "host-passthrough",
                     },
                     &cli.UintFlag{
