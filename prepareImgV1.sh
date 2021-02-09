@@ -178,7 +178,7 @@ echo "PATCHDIR: ${PATCHDIR}"
 echo "KVER: ${KVER}"
 
 mount -t proc proc ${MNT_POINT}/proc/
-chroot ${MNT_POINT} /bin/bash -c "mv /etc/resolv.conf && echo 'nameserver 8.8.8.8' | tee /etc/resolv.conf "
+chroot ${MNT_POINT} /bin/bash -c "mv /etc/resolv.conf /etc/resolv.conf.bk && echo 'nameserver 8.8.8.8' | tee /etc/resolv.conf "
 chroot ${MNT_POINT} /bin/bash -c "apt update  && apt install -y crda binutils libdw1 "
 
 KERNEL_PKGS=("linux-headers-${KVER}_" "linux-headers-${KVER}-generic_"
@@ -196,6 +196,9 @@ do
         chroot ${MNT_POINT} dpkg -i "${PATCHDIR}/${pkg}"
     echo "Install $pkg ..  done"
 done
+
+chroot ${MNT_POINT} /bin/bash -c "mv /etc/resolv.conf.bk /etc/resolv.conf"
+
 umount ${MNT_POINT}/proc
 
 sync
