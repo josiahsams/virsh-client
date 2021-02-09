@@ -4,6 +4,12 @@
 REQ_PKGS=("qemu-utils" "libguestfs-tools")
 MNT_POINT="/mnt/image"
 
+#check kernel version : 4.15
+if ! uname -a | grep 4.15; then
+  echo "Kernel version is not supported"
+  exit
+fi
+
 usage()
 {
   echo "Usage: $0 [ -c | --clean ] [ -r | --runz DIRPATH ]
@@ -170,6 +176,15 @@ chroot ${MNT_POINT} /bin/bash <<EOT
 
 	# Create a user runz with UID&GID 1001
 	useradd -u 1001 -m runz
+
+    # provide sudo privileges
+    usermod -aG sudo runz
+
+    # Change dir/file ownership
+    chown runz:runz /volumes
+    chown runz:runz /dev/net/tun
+    chown runz:runz /dev/kvm
+    chmod 0666 /dev/kvm
 EOT
 
 umount ${MNT_POINT}/proc

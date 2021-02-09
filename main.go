@@ -88,6 +88,9 @@ func main() {
                         Usage:   "path to user data scripts",
                         Aliases: []string{"u"},
                     },
+                    //TODO: 
+                    // startup script (for every boot invocation) : cloud-init
+                    // accept volumes dir and implement filesystem mount for volumes for XML generation
                 },
             },
         },

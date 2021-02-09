@@ -16,16 +16,43 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// StartScript ..
+type StartScript struct {
+	name string
+	script string
+}
 // cloudinit ..
 type cloudinit struct {
 	basePath string
 	userData string
+	startScripts []StartScript
+}
+
+// CloudInit ...
+type CloudInit struct {
+	cloudinit
+}
+
+// New .. 
+func New(basePath, userData string) (ci *CloudInit) {
+	// ci = &CloudInit{basePath: basePath, 
+	// 	userData: userData}
+	ciInternal := cloudinit{basePath: basePath, 
+		userData: userData}
+	ci = &CloudInit {ciInternal}
+	return
+}
+
+// AddStartScripts .. 
+func (CI *CloudInit)AddStartScripts(name string, script string)  {
+	newScript := StartScript{name, script}
+	CI.startScripts = append(CI.startScripts, newScript)
 }
 
 // PrepareImg ..
-func PrepareImg(basePath, userData string, retainFlag bool) (err error) {
+func (CI *CloudInit)PrepareImg(retainFlag bool) (err error) {
 
-	ci := &cloudinit{basePath, userData}
+	ci := &cloudinit{CI.basePath, CI.userData, CI.startScripts}
 
 	// create directory if it doesn't exist
 	err = ci.createDir()
@@ -40,6 +67,7 @@ func PrepareImg(basePath, userData string, retainFlag bool) (err error) {
 	if err != nil {
 		return
 	}
+
 	err = ci.buildVendordata()
 	if err != nil {
 		return
@@ -52,11 +80,24 @@ func PrepareImg(basePath, userData string, retainFlag bool) (err error) {
 
 	// don't remove the generated files if retain flag is set
 	if ! retainFlag {
-		os.Remove(basePath+".metadata")
-		os.Remove(basePath+".userData")
-		os.Remove(basePath+".vendordata")
+		os.Remove(CI.basePath+".metadata")
+		os.Remove(CI.basePath+".userData")
+		os.Remove(CI.basePath+".vendordata")
 	}
 	return
+}
+
+func (ci *cloudinit) constructStartupScript(name string, script string) (scriptCombined string) {
+	scriptCombined = `#!/bin/bash
+PER_BOOT_SCRIPTS_DIR=/var/lib/cloud/scripts/per-boot
+SCRIPT_PATH=$PER_BOOT_SCRIPTS_DIR/`+name+`
+cat << EOT > $SCRIPT_PATH
+` + script + `
+EOT
+chmod +x $SCRIPT_PATH
+$SCRIPT_PATH
+`
+	return 
 }
 
 func (ci *cloudinit) createDir() error {
@@ -151,6 +192,16 @@ func (ci *cloudinit) assembleVendordata () (vendorData []byte, err error) {
 	err = ci.writeDataSection(writer, textCloudConfig, configString)
 	if err != nil {
 		return
+	}
+
+	// add startup scripts to vendor script
+	for _, startScript := range ci.startScripts {
+		perBootScript := ci.constructStartupScript(startScript.name , startScript.script)
+
+		err = ci.writeDataSection(writer, textShellScript, perBootScript)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// add the final boundary

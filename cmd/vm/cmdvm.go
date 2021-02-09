@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	ci "github.com/josiahsams/virsh-client/internal/pkg/cloudinit"
+	cloudinit "github.com/josiahsams/virsh-client/internal/pkg/cloudinit"
 	vm "github.com/josiahsams/virsh-client/internal/pkg/vm"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/urfave/cli/v2"
@@ -39,7 +39,14 @@ func HandleCreateVM(c *cli.Context) error {
     _, err = os.Stat(cloudInitSrc)
     if os.IsNotExist(err) {
         fmt.Printf("CloudInit image will be created and add it to the VM.\n")
-        err = ci.PrepareImg(cloudInitSrc, userdata, false)
+        ci := cloudinit.New(cloudInitSrc, userdata)
+        script := "export RUNZ_COMMIT='2cc9801+';" + 
+                "export UID=1001;" +
+                "export GID=1001;" +
+                "nohup proxy -id xyz &"
+
+        ci.AddStartScripts("runz", script)
+        err := ci.PrepareImg(false)
         if err != nil {
             panic(err)
         }
