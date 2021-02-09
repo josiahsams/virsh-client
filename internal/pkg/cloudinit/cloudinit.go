@@ -2,6 +2,7 @@ package cloudint
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -9,6 +10,7 @@ import (
 	"net/textproto"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 
 	"gopkg.in/yaml.v2"
@@ -29,7 +31,10 @@ func PrepareImg(basePath, userData string) (err error) {
 	if err != nil {
 		return
 	}
-
+	err = ci.buildMetaData()
+	if err != nil {
+		return
+	}
 	err = ci.buildUserData()
 	if err != nil {
 		return
@@ -52,6 +57,25 @@ func (ci *cloudinit) createDir() error {
 		return err
 	}
 	return nil
+}
+
+func wrapError(err error, msg string) error {
+	return fmt.Errorf("%s %w", msg, err) 
+}
+
+func (ci *cloudinit) buildMetaData() (err error) {
+
+	meta := metadataInfoCI{
+		InstanceID:    "sample-instance-id",
+		LocalHostname: "sample1",
+	}
+	metaDataYAML, err := yaml.Marshal(meta)
+	if err != nil {
+		return wrapError(err, "could not marshal metadata to yaml")
+	}
+
+	err = ci.updateInitDataFile(".metadata", metaDataYAML)
+	return 
 }
 
 func (ci *cloudinit) buildUserData() (err error) {
@@ -78,20 +102,19 @@ func (ci *cloudinit) updateInitDataFile(fileName string, newData []byte) (err er
 	initDataFilePath := ci.basePath + fileName
 	err = ioutil.WriteFile(initDataFilePath, newData, 0777)
 	if err != nil {
-		return
+		return wrapError(err, "could not write "+path.Base(initDataFilePath)+" to disk")
 	}
-
 	return
 }
 
 func (ci *cloudinit) createImage() (err error) {
-	imgPath := ci.basePath
+	imgPath := ci.basePath + ".img"
 	_, err = exec.Command("cloud-localds", "--disk-format=raw", 
 				"--vendor-data="+ci.basePath+".vendordata", 
 				imgPath, ci.basePath+".userData", 
 				ci.basePath+".metadata").CombinedOutput()
 	if err != nil {
-		return
+		return wrapError(err, "could not create cloud-init disk")
 	}
 	return nil
 }
@@ -113,7 +136,7 @@ func (ci *cloudinit) assembleVendordata () (vendorData []byte, err error) {
 	
 	out, err := yaml.Marshal(powerState)
 	if err != nil {
-		return
+		return nil, wrapError(err, "could not marshal metadata to yaml")
 	}
 	configString := "#cloud-config\n" + string(out)
 
@@ -137,18 +160,18 @@ func (ci *cloudinit) createBufferAndWriter() (*bytes.Buffer, *multipart.Writer, 
 	writer := multipart.NewWriter(body)
 	req, err := http.NewRequest("POST", "", body)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, wrapError(err, "could not make request for multipart data construction")
 	}
 	// hardcode boundary so we can tell if the data has changed
 	writer.SetBoundary(LinuxMimeBoundary)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	err = req.Header.Write(body)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, wrapError(err, "could not write multipart data header")
 	}
 	_, err = body.WriteString("MIME-Version: 1.0\n\n")
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, wrapError(err, "could not write multipart data header")
 	}
 	return body, writer, nil
 }
@@ -158,11 +181,11 @@ func (ci *cloudinit) writeDataSection(writer *multipart.Writer, contentType, con
 	mh.Set("Content-Type", contentType)
 	partWriter, err := writer.CreatePart(mh)
 	if err != nil {
-		return
+		return wrapError(err, "could not create data section")
 	}
 	_, err = io.Copy(partWriter, bytes.NewBufferString(content))
 	if err != nil {
-		return
+		return wrapError(err, "could not create data section")
 	}
 	return nil
 }

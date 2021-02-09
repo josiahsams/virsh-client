@@ -6,14 +6,14 @@ import (
 )
 
 // HandleCreateCloudInitImg ..
-func HandleCreateCloudInitImg(c *cli.Context) (err error) {
+func HandleCreateCloudInitImg(c *cli.Context) error {
 
 	imgpath := c.String("imgpath")
 	userdata := c.String("userdata")
 
-	err = ci.PrepareImg(imgpath, userdata)
+	err := ci.PrepareImg(imgpath, userdata)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	return nil

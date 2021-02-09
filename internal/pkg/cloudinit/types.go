@@ -8,3 +8,8 @@ type powerStateCI struct {
 	Timeout 	    int 		`yaml:"timeout"`
 	Condition       string   	`yaml:"condition"`
 }
+
+type metadataInfoCI struct {
+	InstanceID    string `yaml:"instance-id"`
+	LocalHostname string `yaml:"local-hostname"`
+}
