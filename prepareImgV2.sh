@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+# set -x
 
 REQ_PKGS=("qemu-utils" "libguestfs-tools")
 MNT_POINT="/mnt/image"
