@@ -14,6 +14,26 @@ func main() {
 		Name:  "zosvm",
 		Usage: "Utility for managing a libvirt z/OS VM",
 		Commands: []*cli.Command{
+            {
+				Name:  "ci",
+				Usage: "Create a Cloud Init image",
+                Action: func(c *cli.Context) error {
+							return vm.HandleCreateCloudInitImg(c)
+						},
+				Flags: []cli.Flag{
+                    &cli.StringFlag{
+                        Name:    "imgpath",
+                        Usage:   "Cloud Init image path",
+                        Aliases: []string{"i"},
+                        Required: true,
+                    },
+                    &cli.StringFlag{
+                        Name:    "userdata",
+                        Usage:   "path to user data scripts",
+                        Aliases: []string{"u"},
+                    },
+                },
+            },
 			{
 				Name:  "create",
 				Usage: "Create a libvirt z/OS VM",
