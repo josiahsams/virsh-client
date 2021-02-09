@@ -32,6 +32,12 @@ func main() {
                         Usage:   "path to user data scripts",
                         Aliases: []string{"u"},
                     },
+                    &cli.BoolFlag{
+                        Name: "retain",
+                        Usage: "flag to retain the generated files",
+                        Aliases: []string{"r"},
+                        Value: false,
+                    },
                 },
             },
 			{
@@ -76,6 +82,11 @@ func main() {
                         Usage:   "Memory size to allocate",
                         Aliases: []string{"m"},
                         Value: 4194304,
+                    },
+                    &cli.StringFlag{
+                        Name:    "userdata",
+                        Usage:   "path to user data scripts",
+                        Aliases: []string{"u"},
                     },
                 },
             },

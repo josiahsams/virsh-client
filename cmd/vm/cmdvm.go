@@ -3,7 +3,9 @@ package vm
 import (
 	"fmt"
 	"log"
+	"os"
 
+	ci "github.com/josiahsams/virsh-client/internal/pkg/cloudinit"
 	vm "github.com/josiahsams/virsh-client/internal/pkg/vm"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/urfave/cli/v2"
@@ -32,6 +34,18 @@ func HandleCreateVM(c *cli.Context) error {
 	mode := c.String("mode")
 	osImgSrc := c.String("osImgSrc")
 	cloudInitSrc := c.String("cloudInitSrc")
+    userdata := c.String("userdata")
+
+    _, err = os.Stat(cloudInitSrc)
+    if os.IsNotExist(err) {
+        fmt.Printf("CloudInit image will be created and add it to the VM.")
+        err = ci.PrepareImg(cloudInitSrc, userdata, false)
+        if err != nil {
+            panic(err)
+        }
+    } else {
+        fmt.Printf("Skip creating CloudInit image as its already found.")
+    }
 
     newVM := vm.New(vmName, memory, vpcu, mode, osImgSrc, cloudInitSrc)
     xml, err := newVM.CreateXML()

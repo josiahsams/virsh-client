@@ -23,10 +23,11 @@ type cloudinit struct {
 }
 
 // PrepareImg ..
-func PrepareImg(basePath, userData string) (err error) {
+func PrepareImg(basePath, userData string, retainFlag bool) (err error) {
 
 	ci := &cloudinit{basePath, userData}
 
+	// create directory if it doesn't exist
 	err = ci.createDir()
 	if err != nil {
 		return
@@ -47,6 +48,13 @@ func PrepareImg(basePath, userData string) (err error) {
 	err = ci.createImage()
 	if err != nil {
 		return
+	}
+
+	// don't remove the generated files if retain flag is set
+	if ! retainFlag {
+		os.Remove(basePath+".metadata")
+		os.Remove(basePath+".userData")
+		os.Remove(basePath+".vendordata")
 	}
 	return
 }

@@ -10,8 +10,9 @@ func HandleCreateCloudInitImg(c *cli.Context) error {
 
 	imgpath := c.String("imgpath")
 	userdata := c.String("userdata")
+	retainFlag := c.Bool("retain")
 
-	err := ci.PrepareImg(imgpath, userdata)
+	err := ci.PrepareImg(imgpath, userdata, retainFlag)
 	if err != nil {
 		panic(err)
 	}
