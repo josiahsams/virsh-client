@@ -72,7 +72,7 @@ func (inst *Instance) CreateXML() (xml string, err error ) {
     } else {
         domcfg.Type = "qemu"
     }
-    domcfg.Name  = "ub18-1"
+    domcfg.Name  = inst.Name
 
     domcfg.Memory = &lvxml.DomainMemory{
           Unit: "KiB",
