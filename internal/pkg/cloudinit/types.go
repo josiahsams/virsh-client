@@ -1,7 +1,10 @@
 package cloudint
 
-
 type powerStateCI struct {
+	PowerState           _powerStateCI   	`yaml:"power_state"`
+}
+
+type _powerStateCI struct {
 	Delay           string   	`yaml:"delay"`
 	Mode        	string     	`yaml:"mode"`
 	Message         string    	`yaml:"message"`

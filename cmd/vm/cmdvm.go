@@ -38,13 +38,13 @@ func HandleCreateVM(c *cli.Context) error {
 
     _, err = os.Stat(cloudInitSrc)
     if os.IsNotExist(err) {
-        fmt.Printf("CloudInit image will be created and add it to the VM.")
+        fmt.Printf("CloudInit image will be created and add it to the VM.\n")
         err = ci.PrepareImg(cloudInitSrc, userdata, false)
         if err != nil {
             panic(err)
         }
     } else {
-        fmt.Printf("Skip creating CloudInit image as its already found.")
+        fmt.Printf("Skip creating CloudInit image as its already found. \n")
     }
 
     newVM := vm.New(vmName, memory, vpcu, mode, osImgSrc, cloudInitSrc)

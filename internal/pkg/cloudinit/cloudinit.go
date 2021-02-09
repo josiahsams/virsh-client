@@ -134,13 +134,13 @@ func (ci *cloudinit) assembleVendordata () (vendorData []byte, err error) {
 		return nil, err
 	}
 
-	powerState := powerStateCI{
+	powerState := powerStateCI {PowerState: _powerStateCI{
 		Delay: "now",
 		Mode: "reboot",
 		Message:  "reboot VM after kernel patches",
 		Timeout: 0,
 		Condition:  "dpkg --configure -a 2>&1 | grep -i done",
-	}
+	}}
 	
 	out, err := yaml.Marshal(powerState)
 	if err != nil {
