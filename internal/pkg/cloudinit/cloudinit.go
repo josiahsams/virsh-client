@@ -116,7 +116,7 @@ func (ci *cloudinit) updateInitDataFile(fileName string, newData []byte) (err er
 }
 
 func (ci *cloudinit) createImage() (err error) {
-	imgPath := ci.basePath + ".img"
+	imgPath := ci.basePath
 	_, err = exec.Command("cloud-localds", "--disk-format=raw", 
 				"--vendor-data="+ci.basePath+".vendordata", 
 				imgPath, ci.basePath+".userData", 
