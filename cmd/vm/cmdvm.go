@@ -42,9 +42,12 @@ func HandleCreateVM(c *cli.Context) error {
         if os.IsNotExist(err) {
             fmt.Printf("CloudInit image will be created and add it to the VM.\n")
             ci := cloudinit.New(cloudInitSrc, userdata)
-            script := "export RUNZ_COMMIT='2cc9801+';" + 
-                    "export UID=1001;" +
-                    "export GID=1001;" +
+            script := "chown runz:runz /dev/net/tun;\n" +
+                    "chown runz:runz /dev/kvm;\n" + 
+                    "chmod 0666 /dev/kvm;\n" +
+                    "export RUNZ_COMMIT='2cc9801+';\n" + 
+                    "export UID=1001;\n" +
+                    "export GID=1001;\n" +
                     "nohup proxy -id xyz &"
 
             ci.AddStartScripts("runz", script)
@@ -59,14 +62,14 @@ func HandleCreateVM(c *cli.Context) error {
 
     // Create a new OS image keep the baseOS image as a backing store
     newOSImgSrc := osImgSrc + "-" + vmName
-    _, err = exec.Command("/usr/bin/qemu-img", "create -f qcow2 -F qcow2 -b",
+    _, err = exec.Command("qemu-img", "create", "-f",  "qcow2", "-F", "qcow2", "-b",
                 osImgSrc , newOSImgSrc).CombinedOutput()
 	if err != nil {
 		panic(err)
 	} 
 
     fmt.Println("Created a new clone out of the baseOS image: ", newOSImgSrc)
-    newVM := vm.New(vmName, memory, vpcu, mode, osImgSrc, cloudInitSrc)
+    newVM := vm.New(vmName, memory, vpcu, mode, newOSImgSrc, cloudInitSrc)
     xml, err := newVM.CreateXML()
 
     domain, err := conn.DomainCreateXML(xml, flags)

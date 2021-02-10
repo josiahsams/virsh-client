@@ -4,12 +4,6 @@
 REQ_PKGS=("qemu-utils" "libguestfs-tools")
 MNT_POINT="/mnt/image"
 
-#check kernel version : 4.15
-if ! uname -a | grep 4.15; then
-  echo "Kernel version is not supported"
-  exit
-fi
-
 usage()
 {
   echo "Usage: $0 [ -c | --clean ] [ -r | --runz DIRPATH ]
@@ -164,9 +158,9 @@ chroot ${MNT_POINT} /bin/bash <<EOT
     set -x
 
     #check kernel version : 4.15
-    if ! uname -a | grep 4.15; then
-    echo "Kernel version is not supported"
-    exit 1
+    if ! ls -lt /boot/initrd.img | grep 4.15; then
+        echo "Kernel version is not supported"
+        exit 1
     fi
 
 	# Add DNS & install dependencies to the kernel patches
