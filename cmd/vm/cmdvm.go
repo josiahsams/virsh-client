@@ -59,8 +59,8 @@ func HandleCreateVM(c *cli.Context) error {
 
     // Create a new OS image keep the baseOS image as a backing store
     newOSImgSrc := osImgSrc + "-" + vmName
-    _, err = exec.Command("qemu-img create -f qcow2 -F qcow2 -b ",
-                "" + osImgSrc + " " + newOSImgSrc).CombinedOutput()
+    _, err = exec.Command("/usr/bin/qemu-img", "create -f qcow2 -F qcow2 -b",
+                osImgSrc , newOSImgSrc).CombinedOutput()
 	if err != nil {
 		panic(err)
 	} 
