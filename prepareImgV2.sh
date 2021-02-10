@@ -162,6 +162,13 @@ mount -t proc -o nosuid,noexec,nodev proc ${MNT_POINT}/proc
 
 chroot ${MNT_POINT} /bin/bash <<EOT
     set -x
+
+    #check kernel version : 4.15
+    if ! uname -a | grep 4.15; then
+    echo "Kernel version is not supported"
+    exit 1
+    fi
+
 	# Add DNS & install dependencies to the kernel patches
 	mv /etc/resolv.conf /etc/resolv.conf.bk
 	echo 'nameserver 8.8.8.8' | tee /etc/resolv.conf

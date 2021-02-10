@@ -63,7 +63,6 @@ func main() {
                         Name:    "cloudInitSrc",
                         Usage:   "Cloud Init Image src path",
                         Aliases: []string{"ci"},
-                        Required: true,
                     },
                     &cli.StringFlag{
                         Name:    "mode",

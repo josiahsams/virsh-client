@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 
 	cloudinit "github.com/josiahsams/virsh-client/internal/pkg/cloudinit"
 	vm "github.com/josiahsams/virsh-client/internal/pkg/vm"
@@ -36,24 +37,35 @@ func HandleCreateVM(c *cli.Context) error {
 	cloudInitSrc := c.String("cloudInitSrc")
     userdata := c.String("userdata")
 
-    _, err = os.Stat(cloudInitSrc)
-    if os.IsNotExist(err) {
-        fmt.Printf("CloudInit image will be created and add it to the VM.\n")
-        ci := cloudinit.New(cloudInitSrc, userdata)
-        script := "export RUNZ_COMMIT='2cc9801+';" + 
-                "export UID=1001;" +
-                "export GID=1001;" +
-                "nohup proxy -id xyz &"
+    if cloudInitSrc != "" {
+        _, err = os.Stat(cloudInitSrc)
+        if os.IsNotExist(err) {
+            fmt.Printf("CloudInit image will be created and add it to the VM.\n")
+            ci := cloudinit.New(cloudInitSrc, userdata)
+            script := "export RUNZ_COMMIT='2cc9801+';" + 
+                    "export UID=1001;" +
+                    "export GID=1001;" +
+                    "nohup proxy -id xyz &"
 
-        ci.AddStartScripts("runz", script)
-        err := ci.PrepareImg(false)
-        if err != nil {
-            panic(err)
+            ci.AddStartScripts("runz", script)
+            err := ci.PrepareImg(false)
+            if err != nil {
+                panic(err)
+            }
+        } else {
+            fmt.Printf("Skip creating CloudInit image as its already found. \n")
         }
-    } else {
-        fmt.Printf("Skip creating CloudInit image as its already found. \n")
     }
 
+    // Create a new OS image keep the baseOS image as a backing store
+    newOSImgSrc := osImgSrc + "-" + vmName
+    _, err = exec.Command("qemu-img create -f qcow2 -F qcow2 -b ",
+                "" + osImgSrc + " " + newOSImgSrc).CombinedOutput()
+	if err != nil {
+		panic(err)
+	} 
+
+    fmt.Println("Created a new clone out of the baseOS image: ", newOSImgSrc)
     newVM := vm.New(vmName, memory, vpcu, mode, osImgSrc, cloudInitSrc)
     xml, err := newVM.CreateXML()
 

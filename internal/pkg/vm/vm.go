@@ -10,22 +10,22 @@ import (
 // Instance ..
 type Instance struct {
 	Name string
-	MemoryInKB uint
-	VCPU uint
-	Mode string
-	DiskSource string
-	CloudInitSource string
+	memoryInKB uint
+	vcpu uint
+	mode string
+	diskSource string
+	cloudInitSource string
 }
 
 // New ...
 func New(name string, memory uint, vcpu uint, mode string, diskSrc string, cloudInitSrc string ) *Instance {
 	return &Instance{ 
 		Name : name, 
-		MemoryInKB: memory, 
-		VCPU : vcpu, 
-		Mode: mode,
-		DiskSource: diskSrc, 
-		CloudInitSource: cloudInitSrc,
+		memoryInKB: memory, 
+		vcpu : vcpu, 
+		mode: mode,
+		diskSource: diskSrc, 
+		cloudInitSource: cloudInitSrc,
 	}
 }
 
@@ -76,13 +76,13 @@ func (inst *Instance) CreateXML() (xml string, err error ) {
 
     domcfg.Memory = &lvxml.DomainMemory{
           Unit: "KiB",
-          Value: inst.MemoryInKB,
+          Value: inst.memoryInKB,
        }
-    domcfg.VCPU = &lvxml.DomainVCPU{ Value: inst.VCPU }
+    domcfg.VCPU = &lvxml.DomainVCPU{ Value: inst.vcpu }
 
     if s390x {
          domcfg.CPU = &lvxml.DomainCPU{
-            Mode: inst.Mode,
+            Mode: inst.mode,
         }
     } else {
         domcfg.CPU = &lvxml.DomainCPU{
@@ -96,11 +96,13 @@ func (inst *Instance) CreateXML() (xml string, err error ) {
 
 	domainDisks := make([]lvxml.DomainDisk, 0, 2)
 
-	osDisk := createFileDisk("vda", "qcow2", inst.DiskSource)
+	osDisk := createFileDisk("vda", "qcow2", inst.diskSource)
 	domainDisks = append(domainDisks, *osDisk)
 
-	cloudInitDisk := createFileDisk("vdb", "raw", inst.CloudInitSource)
-	domainDisks = append(domainDisks, *cloudInitDisk)
+    if inst.cloudInitSource != "" {
+        cloudInitDisk := createFileDisk("vdb", "raw", inst.cloudInitSource)
+        domainDisks = append(domainDisks, *cloudInitDisk)
+    }
 
     domcfg.Devices =  &lvxml.DomainDeviceList{
           Emulator: "/usr/bin/qemu-system-" + platform,
