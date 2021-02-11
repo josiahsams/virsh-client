@@ -11,20 +11,26 @@ usage()
                   [ -z | --zpdt   FILEPATH.tar.gz   ] BASE_IMG"
   exit 2
 }
+ld=$(losetup -f)
 
 # unmount dir & remove tmp files
 cleanup() {
     trap - EXIT
     echo "Cleanup .."
+    kpartx -d ${ld}
+losetup -d ${ld}
+
     umount ${MNT_POINT}/proc
 #    umount ${MNT_POINT}/sys
 #    umount ${MNT_POINT}/dev/pts
 #    umount ${MNT_POINT}/dev
-    umount -f -l ${MNT_POINT} >/dev/null 2>&1
+
+ umount -f -l ${MNT_POINT} >/dev/null 2>&1
     rmdir ${MNT_POINT} >/dev/null 2>&1
     echo "done"
     exit 0
 }
+trap cleanup EXIT
 
 args=$(getopt -a -n $0 -o r:k:z:hc --long runz:,kernel:,zpdt:help,clean -- "$@")
 if [ "$?" != "0" ]; then
@@ -95,21 +101,57 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-qemu-img resize ${BASE_IMG} 5G
-if [ $? -ne 0 ]; then
-    echo "qemu-img failed"
-    exit 1
-fi
+# image resized for workspace
+# qemu-img resize ${BASE_IMG} 4G
+# if [ $? -ne 0 ]; then
+#     echo "qemu-img failed"
+#     exit 1
+# fi
 
 mkdir -p ${MNT_POINT}
 
 # Convert cloud image to raw
-qemu-img convert -O raw ${BASE_IMG} ${BASE_IMG}.raw || exit 1
+qemu-img convert -O raw ${BASE_IMG} ${BASE_IMG}.tmp.raw || exit 1
+qemu-img create -f raw ${BASE_IMG}.raw 4G
+virt-resize ${BASE_IMG}.tmp.raw ${BASE_IMG}.raw --expand /dev/sda1
+
+rm ${BASE_IMG}.tmp.raw
+
+#fallocate ${BASE_IMG}.raw -l 4G
 
 # get partition details & mount it
 start=`fdisk -l ${BASE_IMG}.raw  | tail -1 | awk '{ print $3 }'`
 startoffset=`expr $start \* 512`
 mount -o loop,offset=${startoffset}  ${BASE_IMG}.raw ${MNT_POINT} || exit 1
+
+# Get the corresponding loop device and initiate a FS resize.
+#loopDev=`df -h | grep ${MNT_POINT} | awk '{ print $1 }'`
+#resize2fs $loopDev
+# e2fsck -y $loopDev
+
+#qemu-img info ${BASE_IMG}.raw
+#losetup $ld ${BASE_IMG}.raw
+#resize2fs $ld
+#e2fsck -y $ld
+
+# kpartx -a $ld
+#
+# echo "ld : ${ld}"
+# ls -lt /dev/mapper/
+# ldbase=`basename $ld`
+# ldpartition=`ls -lt /dev/mapper/ | grep $ldbase | awk '{ print $9 }'`
+# ldpartition="/dev/mapper/${ldpartition}"
+# #e2fsck -f $ldpartition
+# #e2fsck -y $ldpartition
+# #resize2fs $MNT_POINT
+# #e2fsck -y $ldpartition
+#
+# echo "ldpartition : ${ldpartition}"
+# mount $ldpartition  ${MNT_POINT}
+
+df -h
+
+ls ${MNT_POINT}
 
 # place all the runz binaries
 cp -r ${RUNZ_BIN}/* ${MNT_POINT}/ || exit 1
@@ -144,7 +186,6 @@ KVER=${KVER%.*}
 echo "PATCHDIR: ${PATCHDIR}"
 echo "KVER: ${KVER}"
 
-trap cleanup EXIT
 mount -t proc -o nosuid,noexec,nodev proc ${MNT_POINT}/proc
 # mount -t sysfs -o nosuid,noexec,nodev sysfs ${MNT_POINT}/sys
 # mount -o bind /dev ${MNT_POINT}/dev/
@@ -153,6 +194,9 @@ mount -t proc -o nosuid,noexec,nodev proc ${MNT_POINT}/proc
 # mount -t devpts -o gid=5,mode=620 devpts ${MNT_POINT}/dev/pts
 
 # chroot ${MNT_POINT} update-initramfs -u -k all
+
+KERNEL_SHORTID=`echo ${KVER} | awk -F'-' '{ print $1 }'`
+echo "KERNEL_SHORTID : ${KERNEL_SHORTID}"
 
 chroot ${MNT_POINT} /bin/bash <<EOT
     set -x
@@ -172,8 +216,12 @@ chroot ${MNT_POINT} /bin/bash <<EOT
 	# install the kernel patches
 	cd ${PATCHDIR} && dpkg -i *.deb
 
+    # fix links
+    ln -sf /boot/initrd.img-${KERNEL_SHORTID}* /boot/initrd.img
+    ln -sf /boot/vmlinuz-${KERNEL_SHORTID}* /boot/vmlinuz
+
     # remove packages
-    rm -rf ${PATCHDIR}
+    # rm -rf ${PATCHDIR}
 
 	# Create a user runz with UID&GID 1001
 	useradd -u 1001 -m runz
@@ -183,9 +231,6 @@ chroot ${MNT_POINT} /bin/bash <<EOT
 
     # Change dir/file ownership
     chown runz:runz /volumes
-    chown runz:runz /dev/net/tun
-    chown runz:runz /dev/kvm
-    chmod 0666 /dev/kvm
 EOT
 
 umount ${MNT_POINT}/proc
