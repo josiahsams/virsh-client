@@ -16,10 +16,10 @@ func HandleCreateCloudInitImg(c *cli.Context) error {
 
 	ci := cloudinit.New(imgpath, userdata)
 
-	script := "export RUNZ_COMMIT='2cc9801+';" + 
- 			  "export UID=1001;" +
-			  "export GID=1001;" +
-			  "nohup proxy -id xyz &"
+	script := "export RUNZ_COMMIT='2cc9801+' \n" + 
+ 			  "export UID='1001'; \n" +
+			  "export GID='1001' \n" +
+			  "nohup /proxy -id xyz &"
 
 	ci.AddStartScripts("runz", script)
 	err := ci.PrepareImg(retainFlag)

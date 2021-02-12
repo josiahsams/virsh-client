@@ -160,6 +160,10 @@ cp -r ${RUNZ_BIN}/* ${MNT_POINT}/ || exit 1
 mkdir -p ${MNT_POINT}/volumes
 mkdir -p ${MNT_POINT}/container
 
+# copy pem/cert files
+cp ./cert.pem ${MNT_POINT}/container/
+cp ./key.pem ${MNT_POINT}/container/
+
 # extract zPDT binaries
 rm -rf ${MNT_POINT}/usr/z1090
 mkdir -p ${MNT_POINT}/usr/z1090
@@ -169,12 +173,18 @@ mv ${MNT_POINT}/usr/z1090/zpdtbin-* ${MNT_POINT}/usr/z1090/bin || exit
 # add env. variables
 entry='LD_LIBRARY_PATH=/usr/z1090/bin'
 grep -q "${entry}" ${MNT_POINT}/etc/environment || echo ${entry} >> ${MNT_POINT}/etc/environment
+entry='AUTOIPL=1'
+grep -q "${entry}" ${MNT_POINT}/etc/environment || echo ${entry} >> ${MNT_POINT}/etc/environment
 
 #Setting memory lock to unlimited
 entry='runz      -   memlock     unlimited'
 grep -q "$entry" ${MNT_POINT}/etc/security/limits.conf || echo "$entry" >> ${MNT_POINT}/etc/security/limits.conf
 entry='root      -   memlock     unlimited'
 grep -q "$entry" ${MNT_POINT}/etc/security/limits.conf || echo "$entry" >> ${MNT_POINT}/etc/security/limits.conf
+
+# set sudo access to runz
+# entry='runz  ALL=(ALL) NOPASSWD: ALL'
+# grep -q "$entry" ${MNT_POINT}/etc/sudoers || echo "$entry" >> ${MNT_POINT}/etc/sudoers
 
 # extract kernel patches
 mkdir -p ${MNT_POINT}/patches
@@ -221,7 +231,7 @@ chroot ${MNT_POINT} /bin/bash <<EOT
     ln -sf /boot/vmlinuz-${KERNEL_SHORTID}* /boot/vmlinuz
 
     # remove packages
-    # rm -rf ${PATCHDIR}
+    rm -rf ${PATCHDIR}
 
 	# Create a user runz with UID&GID 1001
 	useradd -u 1001 -m runz
@@ -229,8 +239,15 @@ chroot ${MNT_POINT} /bin/bash <<EOT
     # provide sudo privileges
     usermod -aG sudo runz
 
+    # set passwordless sudo
+    echo 'runz  ALL=(ALL) NOPASSWD: ALL' | EDITOR='tee -a' visudo
+
     # Change dir/file ownership
     chown runz:runz /volumes
+    chown -R runz:runz /container
+
+    # create a soft link for volumes
+    ln -sf /volumes volumes
 EOT
 
 umount ${MNT_POINT}/proc
