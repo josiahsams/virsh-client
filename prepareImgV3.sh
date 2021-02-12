@@ -146,7 +146,7 @@ entry='root      -   memlock     unlimited'
 grep -q "$entry" ${MNT_POINT}/etc/security/limits.conf || echo "$entry" >> ${MNT_POINT}/etc/security/limits.conf
 
 # mount /volumes (vdc - hardcoded**)
-entry='mount /dev/vdc /volumes'
+entry='/dev/vdc /volumes ext4    defaults    0    1'
 grep -q "$entry" ${MNT_POINT}/etc/fstab || echo "$entry" >> ${MNT_POINT}/etc/fstab
 
 # extract kernel patches
