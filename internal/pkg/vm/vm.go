@@ -107,7 +107,7 @@ func (inst *Instance) CreateXML() (xml string, err error ) {
     }
 
     if inst.zvolumes != "" {
-        zosVolumesDisk := createFileDisk("vdc", "qcow2", inst.zvolumes)
+        zosVolumesDisk := createFileDisk("vdc", "raw", inst.zvolumes)
 	    domainDisks = append(domainDisks, *zosVolumesDisk)
     }
 
