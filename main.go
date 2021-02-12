@@ -65,6 +65,11 @@ func main() {
                         Aliases: []string{"ci"},
                     },
                     &cli.StringFlag{
+                        Name:    "zvolumes",
+                        Usage:   "z/OS volumes image path",
+                        Aliases: []string{"z"},
+                    },
+                    &cli.StringFlag{
                         Name:    "mode",
                         Usage:   "CPU mode",
                         Aliases: []string{"mo"},

@@ -36,6 +36,7 @@ func HandleCreateVM(c *cli.Context) error {
 	osImgSrc := c.String("osImgSrc")
 	cloudInitSrc := c.String("cloudInitSrc")
     userdata := c.String("userdata")
+    zvolumes := c.String("zvolumes")
 
     if cloudInitSrc != "" {
         _, err = os.Stat(cloudInitSrc)
@@ -69,7 +70,7 @@ func HandleCreateVM(c *cli.Context) error {
 	} 
 
     fmt.Println("Created a new clone out of the baseOS image: ", newOSImgSrc)
-    newVM := vm.New(vmName, memory, vpcu, mode, newOSImgSrc, cloudInitSrc)
+    newVM := vm.New(vmName, memory, vpcu, mode, newOSImgSrc, cloudInitSrc, zvolumes)
     xml, err := newVM.CreateXML()
 
     domain, err := conn.DomainCreateXML(xml, flags)

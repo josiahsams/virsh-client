@@ -15,10 +15,11 @@ type Instance struct {
 	mode string
 	diskSource string
 	cloudInitSource string
+    zvolumes string
 }
 
 // New ...
-func New(name string, memory uint, vcpu uint, mode string, diskSrc string, cloudInitSrc string ) *Instance {
+func New(name string, memory uint, vcpu uint, mode string, diskSrc string, cloudInitSrc string, zvolumes string ) *Instance {
 	return &Instance{ 
 		Name : name, 
 		memoryInKB: memory, 
@@ -26,6 +27,7 @@ func New(name string, memory uint, vcpu uint, mode string, diskSrc string, cloud
 		mode: mode,
 		diskSource: diskSrc, 
 		cloudInitSource: cloudInitSrc,
+        zvolumes:  zvolumes,
 	}
 }
 
@@ -102,6 +104,11 @@ func (inst *Instance) CreateXML() (xml string, err error ) {
     if inst.cloudInitSource != "" {
         cloudInitDisk := createFileDisk("vdb", "raw", inst.cloudInitSource)
         domainDisks = append(domainDisks, *cloudInitDisk)
+    }
+
+    if inst.zvolumes != "" {
+        zosVolumesDisk := createFileDisk("vdc", "qcow2", inst.zvolumes)
+	    domainDisks = append(domainDisks, *zosVolumesDisk)
     }
 
     domcfg.Devices =  &lvxml.DomainDeviceList{
