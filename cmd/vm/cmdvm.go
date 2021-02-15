@@ -37,6 +37,7 @@ func HandleCreateVM(c *cli.Context) error {
 	cloudInitSrc := c.String("cloudInitSrc")
     userdata := c.String("userdata")
     zvolumes := c.String("zvolumes")
+    share := c.Bool("share")
 
     if cloudInitSrc != "" {
         _, err = os.Stat(cloudInitSrc)
@@ -71,12 +72,15 @@ func HandleCreateVM(c *cli.Context) error {
     }
 
     // Create a new OS image keep the baseOS image as a backing store
-    newOSImgSrc := osImgSrc + "-" + vmName
-    _, err = exec.Command("qemu-img", "create", "-f",  "qcow2", "-F", "qcow2", "-b",
-                osImgSrc , newOSImgSrc).CombinedOutput()
-	if err != nil {
-		panic(err)
-	} 
+    newOSImgSrc := osImgSrc
+    if share {
+        newOSImgSrc := newOSImgSrc + "-" + vmName
+        _, err = exec.Command("qemu-img", "create", "-f",  "qcow2", "-F", "qcow2", "-b",
+                    osImgSrc , newOSImgSrc).CombinedOutput()
+        if err != nil {
+            panic(err)
+        }
+    }
 
     fmt.Println("Created a new clone out of the baseOS image: ", newOSImgSrc)
     newVM := vm.New(vmName, memory, vpcu, mode, newOSImgSrc, cloudInitSrc, zvolumes)

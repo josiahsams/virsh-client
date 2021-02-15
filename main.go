@@ -92,10 +92,15 @@ func main() {
                         Usage:   "path to user data scripts",
                         Aliases: []string{"u"},
                     },
+                    &cli.BoolFlag{
+                        Name:    "share",
+                        Usage:   "Create of backing store out of boot image so that the same img can be shared",
+                        Aliases: []string{"s"},
+                        Value:   false,
+                    },
                     //TODO: 
                     // startup script (for every boot invocation) : cloud-init
-                    // accept volumes dir and implement filesystem mount for volumes for XML generation
-                },
+                    },
             },
         },
     }
