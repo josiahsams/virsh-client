@@ -45,7 +45,8 @@ func HandleCreateVM(c *cli.Context) error {
             fmt.Printf("CloudInit image will be created and add it to the VM.\n")
             ci := cloudinit.New(cloudInitSrc, userdata)
             script := "#!/bin/bash \n" +
-                    "sleep 20 \n"+
+                    "sleep 30 \n"+
+                    "ulimit -l unlimited \n"+
                     "chown runz:runz /dev/net/tun \n" +
                     "chown runz:runz /dev/kvm \n" + 
                     "chown -R runz:runz /volumes \n" + 
